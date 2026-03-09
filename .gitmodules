@@ -1,0 +1,6 @@
+[submodule "sparkcan_py"]
+	path = sparkcan_py
+	url = https://github.com/vedAnts256/sparkcan_pybindings.git
+[submodule "piperlib"]
+	path = piperlib
+	url = https://github.com/eneserciyes/piperlib.git
