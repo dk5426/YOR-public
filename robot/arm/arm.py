@@ -34,9 +34,9 @@ class ArmNode:
         self.can_port = can_port
         self.is_left_arm = is_left_arm
         if is_left_arm:
-            self.urdf_path = (_HERE / "../../../piperlib/urdf/piper_cone-e_left.urdf").as_posix()
+            self.urdf_path = (_HERE / "../../piperlib/urdf/piper_cone-e_left.urdf").as_posix()
         else:
-            self.urdf_path = (_HERE / "../../../piperlib/urdf/piper_cone-e_right.urdf").as_posix()
+            self.urdf_path = (_HERE / "../../piperlib/urdf/piper_cone-e_right.urdf").as_posix()
         self.solver_dt = solver_dt
 
         # initialize arm
