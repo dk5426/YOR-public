@@ -19,8 +19,8 @@ This repository contains the codebase for the YOR robot, supporting both high-fi
 ### 1.2 Cloning the Repository
 This repository uses submodules. Clone recursively:
 ```bash
-git clone --recursive https://github.com/YOR-robot/YOR.git
-cd YOR
+git clone --recursive https://github.com/dk5426/YOR-public.git
+cd YOR-public
 ```
 If you already cloned without submodules:
 ```bash
