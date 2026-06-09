@@ -9,7 +9,7 @@ This repository contains the codebase for the YOR robot, supporting both high-fi
 - **Python:** Version 3.10 or higher.
 - **Hardware (Physical only):**
   - CANable or compatible USB-to-CAN adapter.
-  - AgileX Nero arm(s).
+  - AgileX Nero arm(s) — firmware versions DEFAULT (≤ 1.10), V111 (1.11), and V112 (≥ 1.12) are all supported. See [nerolib/README.md](nerolib/README.md#firmware-version) for details on selecting the right version.
   - SparkFlex/SparkMax motor controllers.
 
 ### 1.2 Cloning the Repository
@@ -59,6 +59,14 @@ bash install.sh
 cd ..
 ```
 *(This will automatically install dependencies into your active `yor-nero` environment.)*
+
+> [!IMPORTANT]
+> After installing, configure the firmware version to match your arm. In `robot/arm/arm.py` (or wherever you instantiate `ArmNode`), pass the correct `firmware_version`:
+> ```python
+> from nerolib import FirmwareVersion
+> arm = ArmNode(can_port="can0", ..., firmware_version=FirmwareVersion.V112)
+> ```
+> Valid values: `FirmwareVersion.DEFAULT` (≤ 1.10), `FirmwareVersion.V111` (1.11), `FirmwareVersion.V112` (≥ 1.12). Defaults to `DEFAULT` if not set.
 
 **5. Install Main Robot Package:**
 ```bash
@@ -229,3 +237,7 @@ python robot/teleop/oculus_bimanual_teleop.py
 **Import errors after installation**
 - Verify your environment is activated: `conda activate yor-nero` or `source .venv/bin/activate`
 - Try reinstalling in editable mode: `pip install -e .`
+
+**Arm does not respond / moves unexpectedly after a firmware update**
+- The Nero arm CAN protocol changed across firmware versions. Check your arm's firmware version and set `firmware_version` accordingly when constructing `ArmNode` or `ControllerConfig`. See [nerolib/README.md](nerolib/README.md#firmware-version) for the full compatibility table.
+- Common symptom of a version mismatch: the arm enables successfully but does not move, or moves erratically in MIT mode.

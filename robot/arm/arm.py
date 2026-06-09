@@ -6,7 +6,7 @@ import numpy as np
 import mink
 
 try:
-    from nerolib import NeroController, ControllerConfig, JointState, Gain, ControlMode, MoveMode
+    from nerolib import NeroController, ControllerConfig, FirmwareVersion, JointState, Gain, ControlMode, MoveMode
 except ImportError:
     print("nerolib not found. Please install it or use the 'nerolib' conda environment.")
     raise
@@ -32,6 +32,7 @@ class ArmNode:
         default_kp: Optional[float | list[float]] = 15.0,
         default_kd: Optional[float | list[float]] = 0.8,
         gravity_comp_scale: float = 1.0,
+        firmware_version=None,
     ):
         _ROOT = Path(__file__).parent.parent.parent
         self.can_port = can_port
@@ -79,6 +80,9 @@ class ArmNode:
 
             self.config.gravity_compensation = False
             self.config.gravity_comp_scale = gravity_comp_scale
+
+            if firmware_version is not None:
+                self.config.firmware_version = firmware_version
 
             self.nero = NeroController(self.config)
             

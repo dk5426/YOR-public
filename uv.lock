@@ -700,7 +700,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "commlink", specifier = ">=0.2.1" },
+    { name = "commlink", specifier = ">=0.2.1,<=0.3.0" },
     { name = "loop-rate-limiters", specifier = ">=1.1.0" },
     { name = "mink" },
     { name = "mujoco", specifier = ">=3.2.7" },

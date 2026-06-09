@@ -26,7 +26,7 @@ dependencies = [
     "mink",
     "tqdm",
     "loop-rate-limiters>=1.1.0",
-    "commlink>=0.2.1",
+    "commlink>=0.2.1,<=0.3.0",
     "dynamixel_sdk",
 ]
 
