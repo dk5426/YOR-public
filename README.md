@@ -27,6 +27,13 @@ If you already cloned without submodules:
 git submodule update --init --recursive
 ```
 
+> [!TIP]
+> **Submodule Clone Fails (SSH / Permission Denied):**
+> One of the submodules (`ruckig` inside `piperlib`) uses an SSH Git URL. If you encounter a `Permission denied (publickey)` error during cloning, configure Git to use HTTPS instead of SSH, then retry cloning:
+> ```bash
+> git config --global url."https://github.com/".insteadOf "git@github.com:"
+> ```
+
 ### 1.3 Environment Setup (Recommended: Conda)
 
 For **Linux systems with physical robot support**, we recommend using conda to manage dependencies, as it provides better control over C++ library versions.
@@ -63,6 +70,13 @@ cd piperlib
 pip install -e . --no-build-isolation
 cd ..
 ```
+
+> [!IMPORTANT]
+> **Firmware version:** piperlib now requires you to specify which Piper firmware is on your arm. Set `controller_config.firmware_version` in your arm node (`robot/arm/arm.py`) to match:
+> - `FirmwareVersion.V183` — firmware S-V1.8-3 through S-V1.8-7 (default)
+> - `FirmwareVersion.V188` — firmware S-V1.8-8 and later
+>
+> Running with the wrong version causes corrupted CAN frames and driver faults. Check your firmware version in the AgileX app.
 
 **5. Install Main Robot Package:**
 ```bash
@@ -230,9 +244,26 @@ python robot/teleop/oculus_bimanual_teleop.py
 - Ensure `robot/yor.py` or `robot/yor_mujoco.py` is running in another terminal
 - Check if port 5557 is blocked or already in use
 
+**"Driver error detected on joint N. Please restart the program."**
+- This is almost always a firmware version mismatch between piperlib and the actual firmware running on your arm.
+- Find your firmware version in the AgileX app (it looks like `S-V1.8-8`).
+- Set `controller_config.firmware_version` in `robot/arm/arm.py` accordingly:
+  ```python
+  from piperlib import FirmwareVersion
+  self.controller_config.firmware_version = FirmwareVersion.V188  # or V183
+  ```
+- A version mismatch sends corrupted torque values (~1 Nm of unexpected torque per joint even when commanding zero), which triggers the arm's driver protection on whichever joint is under the most load.
+
 **Import errors after installation**
 - Verify your environment is activated: `conda activate yor` or `source .venv/bin/activate`
 - Try reinstalling in editable mode: `pip install -e .`
+
+**"Permission denied (publickey)" or access errors during `git clone --recursive`**
+- One of the nested submodules (`ruckig`) uses an SSH Git URL. Configure Git to rewrite SSH GitHub URLs to HTTPS:
+  ```bash
+  git config --global url."https://github.com/".insteadOf "git@github.com:"
+  ```
+  Then delete the partially cloned directory and run the clone command again.
 
 - Website: [yourownrobot.ai](https://yourownrobot.ai)
 - Paper: [arXiv:2602.11150](https://arxiv.org/abs/2602.11150)

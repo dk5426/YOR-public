@@ -43,7 +43,10 @@ def apply_deadzone(arr, dz=0.05):
 
 class JoystickNode:
     def __init__(self):
+        import os
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
         pygame.init()
+        pygame.display.init()
         if pygame.joystick.get_count() < 1:
             raise RuntimeError("No joystick detected")
         self.joystick = Joystick(0)

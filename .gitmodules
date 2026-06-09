@@ -3,4 +3,4 @@
 	url = https://github.com/vedAnts256/sparkcan_pybindings.git
 [submodule "piperlib"]
 	path = piperlib
-	url = https://github.com/eneserciyes/piperlib.git
+	url = https://github.com/dk5426/piperlib.git
