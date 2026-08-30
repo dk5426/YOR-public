@@ -33,20 +33,37 @@ class ArmNode:
         default_kd: Optional[float | list[float]] = 0.8,
         gravity_comp_scale: float = 1.0,
         firmware_version=None,
+        wuji_hand: bool = False,
     ):
         _ROOT = Path(__file__).parent.parent.parent
         self.can_port = can_port
         self.is_left_arm = is_left_arm
-        if is_left_arm:
-            self.urdf_path = (_ROOT / "nerolib/urdf/nero_cone-e_left_fixed.urdf").as_posix()
+        self.wuji_hand = bool(wuji_hand)
+        # The *_wuji URDFs carry the Wuji hand, its mount and the EE stand as a
+        # lumped rigid payload (~0.71 kg, ~14 cm out) on link7, so gravity
+        # compensation accounts for it. Defaults to False: picking the wrong
+        # model is wrong in both directions -- a bare arm on the wuji model is
+        # over-compensated and drifts upward, a hand on the bare model sags.
+        if self.wuji_hand:
+            self.urdf_path = (
+                _ROOT / "nerolib/urdf/nero_cone-e_left_fixed_wuji.urdf"
+                if is_left_arm
+                else _ROOT / "nerolib/urdf/right_arm_final_wuji.urdf"
+            ).as_posix()
         else:
-            self.urdf_path = (_ROOT / "nerolib/urdf/right_arm_final.urdf").as_posix()
+            self.urdf_path = (
+                _ROOT / "nerolib/urdf/nero_cone-e_left_fixed.urdf"
+                if is_left_arm
+                else _ROOT / "nerolib/urdf/right_arm_final.urdf"
+            ).as_posix()
         self.solver_dt = solver_dt
 
         # Initialize nerolib NeroController
         self.control_mode_set = False
         try:
             print(f"[ArmNode] Initializing {can_port} with nerolib...")
+            print(f"[ArmNode] hand={'wuji' if self.wuji_hand else 'none'} "
+                  f"urdf={Path(self.urdf_path).name}")
             
             self.config = ControllerConfig()
             self.config.interface_name = can_port

@@ -9,7 +9,7 @@ This repository contains the codebase for the YOR robot, supporting both high-fi
 - **Python:** Version 3.10 or higher.
 - **Hardware (Physical only):**
   - CANable or compatible USB-to-CAN adapter.
-  - AgileX Nero arm(s) — firmware versions DEFAULT (≤ 1.10), V111 (1.11), and V112 (≥ 1.12) are all supported. See [nerolib/README.md](nerolib/README.md#firmware-version) for details on selecting the right version.
+  - AgileX Nero arm(s) — firmware versions DEFAULT (≤ 1.10), V111 (1.11), and V112 (≥ 1.12) are all supported. Run `python3 nerolib/scripts/get_firmware.py` to have the arm report its own version; see [nerolib/README.md](nerolib/README.md#firmware-version) for the compatibility table.
   - SparkFlex/SparkMax motor controllers.
 
 ### 1.2 Cloning the Repository
@@ -58,15 +58,26 @@ cd nerolib
 bash install.sh
 cd ..
 ```
-*(This will automatically install dependencies into your active `yor-nero` environment.)*
+*(This installs into your active `yor-nero` environment. If no conda/mamba is found at all, the script offers to bootstrap Miniforge for you.)*
+
+To target a different environment instead of the active one:
+```bash
+bash install.sh --env some-env        # a named conda env
+bash install.sh --prefix ./envs/nero  # an env created with `conda create -p PATH`
+bash install.sh --yes                 # never prompt, for provisioning scripts
+```
 
 > [!IMPORTANT]
-> After installing, configure the firmware version to match your arm. In `robot/arm/arm.py` (or wherever you instantiate `ArmNode`), pass the correct `firmware_version`:
+> After installing, configure the firmware version to match your arm. Ask the arm rather than guessing — this is read-only and safe on a powered, idle arm:
+> ```bash
+> python3 nerolib/scripts/get_firmware.py
+> ```
+> Then pass the constant it reports where you instantiate `ArmNode`:
 > ```python
 > from nerolib import FirmwareVersion
 > arm = ArmNode(can_port="can0", ..., firmware_version=FirmwareVersion.V112)
 > ```
-> Valid values: `FirmwareVersion.DEFAULT` (≤ 1.10), `FirmwareVersion.V111` (1.11), `FirmwareVersion.V112` (≥ 1.12). Defaults to `DEFAULT` if not set.
+> Valid values: `FirmwareVersion.DEFAULT` (≤ 1.10), `FirmwareVersion.V111` (1.11), `FirmwareVersion.V112` (≥ 1.12). Defaults to `DEFAULT` if not set. Nerolib does **not** auto-detect this, and nothing cross-checks your setting against the hardware, so a mismatch shows up as an arm that enables but will not move.
 
 **5. Install Main Robot Package:**
 ```bash
@@ -132,6 +143,36 @@ chmod +x ZED_SDK_Linux.run
 ./ZED_SDK_Linux.run -- silent skip_tools
 python -m pyzed.sl.get_python_api
 ```
+
+### 1.7 Wuji Hand Gravity Compensation (Physical, Optional)
+
+nerolib 1.1.0 ships `*_wuji.urdf` models that carry the Wuji hand, its mount and the end-effector stand as one lumped rigid payload (~0.71 kg at ~14 cm from the wrist) on `link7`.
+
+Enable it per arm with `wuji_hand=True`:
+
+```python
+arm = ArmNode(can_port="can_left", ..., wuji_hand=True)
+```
+
+> [!IMPORTANT]
+> This defaults to `False` (bare arm), and picking the wrong model is wrong in both directions — a hand on the bare model **sags** and will not settle inside its homing tolerance; a bare arm on the wuji model is over-compensated and **drifts upward**. Set it to match what is physically bolted on. `ArmNode` prints the model it selected at startup.
+
+**Verify the model offline** — no CAN, safe with the arms powered down:
+```bash
+python3 nerolib/test/verify_wuji_gravcomp.py
+```
+
+**Then check on hardware** (⚠ powers the arm — put it in a low, supported pose first):
+```bash
+python3 nerolib/test/test_left_compliant.py --dry-run   # confirm settings, touches nothing
+python3 nerolib/test/test_left_compliant.py             # measures drift in compliant mode
+```
+
+If the arm still sags, fix the modelled mass rather than raising `gravity_comp_scale` — the scale multiplies the whole arm's torque and over-compensates the proximal joints:
+```bash
+python3 nerolib/scripts/make_wuji_urdf.py --hand-mass 0.62   # weigh what is fitted, cables included
+```
+The default is 0.58 kg (a stock Wuji Hand); Wuji Hand 2 is 0.745 kg. Restart the controller afterwards — the URDF is read once at construction.
 
 ---
 
@@ -239,5 +280,19 @@ python robot/teleop/oculus_bimanual_teleop.py
 - Try reinstalling in editable mode: `pip install -e .`
 
 **Arm does not respond / moves unexpectedly after a firmware update**
-- The Nero arm CAN protocol changed across firmware versions. Check your arm's firmware version and set `firmware_version` accordingly when constructing `ArmNode` or `ControllerConfig`. See [nerolib/README.md](nerolib/README.md#firmware-version) for the full compatibility table.
+- The Nero arm CAN protocol changed across firmware versions. Ask the arm which one it runs and set `firmware_version` accordingly when constructing `ArmNode` or `ControllerConfig`:
+  ```bash
+  python3 nerolib/scripts/get_firmware.py
+  ```
+  See [nerolib/README.md](nerolib/README.md#firmware-version) for the full compatibility table.
 - Common symptom of a version mismatch: the arm enables successfully but does not move, or moves erratically in MIT mode.
+
+**Arm refuses to enable, or a joint reports an error**
+- Inspect per-joint driver status (enable, error, low-voltage, over-temperature, overcurrent, collision, stall). Read-only, safe:
+  ```bash
+  python3 nerolib/scripts/nerolib_reset.py --status-only
+  ```
+- To clear latched motor errors, drop `--status-only`. ⚠ That cycles motor power, so an unsupported arm **will fall** — put it in a low, supported pose first. The script prompts before acting.
+
+**Arm sags in compliant mode, or homing times out just short of home**
+- Usually the end-effector payload is under-modelled rather than a gains problem. If a Wuji hand is fitted, pass `wuji_hand=True` to `ArmNode` — see [section 1.7](#17-wuji-hand-gravity-compensation-physical-optional). If the arm drifts *upward* instead, the opposite is true: `wuji_hand=True` with no hand fitted.
